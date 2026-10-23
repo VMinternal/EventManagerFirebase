@@ -13,14 +13,14 @@ import java.util.List;
 
 /**
  * DatabaseHelper Class
- * Manages SQLite database creation, upgrades, and CRUD operations for Events.
+ * Manages SQLite database creation, upgrades, and CRUD operations for Events and Sessions.
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "event_manager.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
-    // Table name and columns
+    // Table Events
     private static final String TABLE_EVENTS = "events";
     private static final String COLUMN_ID = "id";
     private static final String COLUMN_NAME = "name";
@@ -33,12 +33,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_EMAIL = "contact_email";
     private static final String COLUMN_PHONE = "contact_phone";
 
+    // Table Sessions
+    private static final String TABLE_SESSIONS = "sessions";
+    private static final String COLUMN_SESSION_ID = "session_id";
+    private static final String COLUMN_SESSION_EVENT_ID = "event_id";
+    private static final String COLUMN_SESSION_NAME = "session_name";
+    private static final String COLUMN_SESSION_SPEAKER = "speaker";
+    private static final String COLUMN_SESSION_START_TIME = "start_time";
+    private static final String COLUMN_SESSION_END_TIME = "end_time";
+    private static final String COLUMN_SESSION_DESCRIPTION = "session_description";
+
     public DatabaseHelper(@Nullable Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
     @Override
+    public void onConfigure(SQLiteDatabase db) {
+        super.onConfigure(db);
+        db.setForeignKeyConstraintsEnabled(true); // foreign key constraints for SQLite
+    }
+
+    @Override
     public void onCreate(SQLiteDatabase db) {
+        // Tạo bảng events
         String CREATE_EVENTS_TABLE = "CREATE TABLE " + TABLE_EVENTS + "("
                 + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_NAME + " TEXT NOT NULL, "
@@ -51,13 +68,29 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_EMAIL + " TEXT, "
                 + COLUMN_PHONE + " TEXT" + ")";
         db.execSQL(CREATE_EVENTS_TABLE);
+
+        // Tạo bảng sessions (Liên kết khóa ngoại với events)
+        String CREATE_SESSIONS_TABLE = "CREATE TABLE " + TABLE_SESSIONS + "("
+                + COLUMN_SESSION_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + COLUMN_SESSION_EVENT_ID + " INTEGER NOT NULL, "
+                + COLUMN_SESSION_NAME + " TEXT NOT NULL, "
+                + COLUMN_SESSION_SPEAKER + " TEXT, "
+                + COLUMN_SESSION_START_TIME + " TEXT, "
+                + COLUMN_SESSION_END_TIME + " TEXT, "
+                + COLUMN_SESSION_DESCRIPTION + " TEXT, "
+                + "FOREIGN KEY(" + COLUMN_SESSION_EVENT_ID + ") REFERENCES " + TABLE_EVENTS + "(" + COLUMN_ID + ") ON DELETE CASCADE"
+                + ")";
+        db.execSQL(CREATE_SESSIONS_TABLE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_SESSIONS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_EVENTS);
         onCreate(db);
     }
+
+
 
     // Insert a new event into the database
     public boolean addEvent(Event event) {
@@ -76,7 +109,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         long result = db.insert(TABLE_EVENTS, null, values);
         db.close();
-        return result != -1; // Returns true if insertion is successful
+        return result != -1;
     }
 
     // Check if an event with the same name and date already exists
@@ -115,7 +148,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 String email = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EMAIL));
                 String phone = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE));
 
-                // Instantiate an Event object that aligns with the new constructor
                 Event event = new Event(id, name, location, date, time, risk, reporter, description, email, phone);
                 eventList.add(event);
             } while (cursor.moveToNext());
@@ -124,5 +156,69 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         cursor.close();
         db.close();
         return eventList;
+    }
+
+    // Delete Event
+    public boolean deleteEvent(int eventId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int result = db.delete(TABLE_EVENTS, COLUMN_ID + " = ?", new String[]{String.valueOf(eventId)});
+        db.close();
+        return result > 0;
+    }
+
+    // Add a new session belonging to an event
+    public boolean addSession(Session session) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+
+        values.put(COLUMN_SESSION_EVENT_ID, session.getEventId());
+        values.put(COLUMN_SESSION_NAME, session.getSessionName());
+        values.put(COLUMN_SESSION_SPEAKER, session.getSpeaker());
+        values.put(COLUMN_SESSION_START_TIME, session.getStartTime());
+        values.put(COLUMN_SESSION_END_TIME, session.getEndTime());
+        values.put(COLUMN_SESSION_DESCRIPTION, session.getDescription());
+
+        long result = db.insert(TABLE_SESSIONS, null, values);
+        db.close();
+        return result != -1;
+    }
+
+    // Retrieve the list of all sessions for a specific event
+    public List<Session> getSessionsForEvent(int eventId) {
+        List<Session> sessionList = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.query(TABLE_SESSIONS,
+                null,
+                COLUMN_SESSION_EVENT_ID + " = ?",
+                new String[]{String.valueOf(eventId)},
+                null, null, COLUMN_SESSION_ID + " DESC");
+
+        if (cursor.moveToFirst()) {
+            do {
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SESSION_ID));
+                int evId = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SESSION_EVENT_ID));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_NAME));
+                String speaker = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_SPEAKER));
+                String startTime = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_START_TIME));
+                String endTime = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_END_TIME));
+                String description = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_DESCRIPTION));
+
+                Session session = new Session(id, evId, name, speaker, startTime, endTime, description);
+                sessionList.add(session);
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        db.close();
+        return sessionList;
+    }
+
+    // Delete a session by ID
+    public boolean deleteSession(int sessionId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int result = db.delete(TABLE_SESSIONS, COLUMN_SESSION_ID + " = ?", new String[]{String.valueOf(sessionId)});
+        db.close();
+        return result > 0;
     }
 }
