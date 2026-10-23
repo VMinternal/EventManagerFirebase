@@ -12,13 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * - DatabaseHelper Class
- * - Manages SQLite database creation, upgrades, and CRUD operations for Events.
+ * DatabaseHelper Class
+ * Manages SQLite database creation, upgrades, and CRUD operations for Events.
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "event_manager.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     // Table name and columns
     private static final String TABLE_EVENTS = "events";
@@ -30,6 +30,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_RISK = "requires_risk";
     private static final String COLUMN_REPORTER = "reporter";
     private static final String COLUMN_DESCRIPTION = "description";
+    private static final String COLUMN_EMAIL = "contact_email";
+    private static final String COLUMN_PHONE = "contact_phone";
 
     public DatabaseHelper(@Nullable Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -44,8 +46,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_DATE + " TEXT NOT NULL, "
                 + COLUMN_TIME + " TEXT, "
                 + COLUMN_RISK + " INTEGER, "
-                + COLUMN_REPORTER + " TEXT NOT NULL, "
-                + COLUMN_DESCRIPTION + " TEXT" + ")";
+                + COLUMN_REPORTER + " TEXT, "
+                + COLUMN_DESCRIPTION + " TEXT, "
+                + COLUMN_EMAIL + " TEXT, "
+                + COLUMN_PHONE + " TEXT" + ")";
         db.execSQL(CREATE_EVENTS_TABLE);
     }
 
@@ -63,14 +67,31 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put(COLUMN_NAME, event.getName());
         values.put(COLUMN_LOCATION, event.getLocation());
         values.put(COLUMN_DATE, event.getDate());
-        values.put(COLUMN_TIME, event.getTime());
+        values.put(COLUMN_TIME, event.getTime() != null ? event.getTime() : "");
         values.put(COLUMN_RISK, event.isRequiresRiskAssessment() ? 1 : 0);
-        values.put(COLUMN_REPORTER, event.getReporter());
+        values.put(COLUMN_REPORTER, event.getReporter() != null ? event.getReporter() : "");
         values.put(COLUMN_DESCRIPTION, event.getDescription());
+        values.put(COLUMN_EMAIL, event.getContactEmail());
+        values.put(COLUMN_PHONE, event.getContactPhone());
 
         long result = db.insert(TABLE_EVENTS, null, values);
         db.close();
         return result != -1; // Returns true if insertion is successful
+    }
+
+    // Check if an event with the same name and date already exists
+    public boolean checkEventExists(String name, String date) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.query(TABLE_EVENTS,
+                new String[]{COLUMN_ID},
+                COLUMN_NAME + " = ? AND " + COLUMN_DATE + " = ?",
+                new String[]{name, date},
+                null, null, null);
+
+        boolean exists = (cursor.getCount() > 0);
+        cursor.close();
+        db.close();
+        return exists;
     }
 
     // Retrieve all events from the database
@@ -91,8 +112,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 boolean risk = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RISK)) == 1;
                 String reporter = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_REPORTER));
                 String description = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DESCRIPTION));
+                String email = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_EMAIL));
+                String phone = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_PHONE));
 
-                Event event = new Event(id, name, location, date, time, risk, reporter, description);
+                // Instantiate an Event object that aligns with the new constructor
+                Event event = new Event(id, name, location, date, time, risk, reporter, description, email, phone);
                 eventList.add(event);
             } while (cursor.moveToNext());
         }
