@@ -55,7 +55,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // Tạo bảng events
+        // Create an events table
         String CREATE_EVENTS_TABLE = "CREATE TABLE " + TABLE_EVENTS + "("
                 + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_NAME + " TEXT NOT NULL, "
@@ -69,7 +69,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COLUMN_PHONE + " TEXT" + ")";
         db.execSQL(CREATE_EVENTS_TABLE);
 
-        // Tạo bảng sessions (Liên kết khóa ngoại với events)
+        // Create a sessions table (with a foreign key linked to events)
         String CREATE_SESSIONS_TABLE = "CREATE TABLE " + TABLE_SESSIONS + "("
                 + COLUMN_SESSION_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + COLUMN_SESSION_EVENT_ID + " INTEGER NOT NULL, "
