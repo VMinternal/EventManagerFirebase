@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <!-- Session name -->
+    <EditText
+        android:id="@+id/etDialogSessionName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Session Name *"
+        android:inputType="text"
+        android:textSize="14sp" />
+
+    <!-- Speaker -->
+    <EditText
+        android:id="@+id/etDialogSpeaker"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Speaker Name"
+        android:inputType="text"
+        android:textSize="14sp" />
+
+    <!-- Start time -->
+    <EditText
+        android:id="@+id/etDialogStartTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Start Time (e.g. 08:00 AM)"
+        android:inputType="text"
+        android:textSize="14sp" />
+
+    <!-- End time -->
+    <EditText
+        android:id="@+id/etDialogEndTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="End Time (e.g. 10:00 AM)"
+        android:inputType="text"
+        android:textSize="14sp" />
+
+    <!-- Describe -->
+    <EditText
+        android:id="@+id/etDialogDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Session Description"
+        android:inputType="textMultiLine"
+        android:minLines="3"
+        android:textSize="14sp" />
+
+</LinearLayout>
