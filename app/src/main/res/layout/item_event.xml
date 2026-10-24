@@ -2,6 +2,7 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/card_view_event"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -111,30 +112,43 @@
             app:layout_constraintStart_toEndOf="@id/iv_time_icon"
             app:layout_constraintTop_toTopOf="@id/iv_time_icon" />
 
-        <!-- Reporter information on bottom right -->
+        <!-- Sessions button -->
+        <Button
+            android:id="@+id/btnManageSessions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#2563EB"
+            android:text="Sessions"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/iv_date_icon" />
+
+        <!-- Reporter information on bottom right (Căn chỉnh cùng hàng ngang với nút Sessions) -->
         <TextView
             android:id="@+id/tv_reporter_prefix"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:text="Reported by: "
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintBottom_toBottomOf="@id/btnManageSessions"
             app:layout_constraintEnd_toStartOf="@id/tv_event_reporter"
-            app:layout_constraintTop_toBottomOf="@id/iv_date_icon" />
+            app:layout_constraintTop_toTopOf="@id/btnManageSessions" />
 
         <TextView
             android:id="@+id/tv_event_reporter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
             android:layout_marginStart="4dp"
             android:text="Name"
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/btnManageSessions"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/iv_date_icon" />
+            app:layout_constraintTop_toTopOf="@id/btnManageSessions" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

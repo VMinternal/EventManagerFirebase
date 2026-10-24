@@ -32,8 +32,13 @@ public class MainActivity extends AppCompatActivity {
         fabAddEvent = findViewById(R.id.fab_add_event);
 
         recyclerViewEvents.setLayoutManager(new LinearLayoutManager(this));
-        eventAdapter = new EventAdapter(eventList, event -> {
-            Toast.makeText(MainActivity.this, "Clicked: " + event.getName(), Toast.LENGTH_SHORT).show();
+        eventAdapter = new EventAdapter(this, eventList, new EventAdapter.OnEventClickListener() {
+            @Override
+            public void onSessionsClick(Event event) {
+                Intent intent = new Intent(MainActivity.this, SessionManagementActivity.class);
+                intent.putExtra("EVENT_ID", event.getId());
+                startActivity(intent);
+            }
         });
         recyclerViewEvents.setAdapter(eventAdapter);
 
