@@ -13,15 +13,18 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 public class AddEventActivity extends AppCompatActivity {
 
-    private TextInputEditText etEventName, etLocation, etDate, etDescription, etContactEmail, etContactPhone;
+    private TextInputEditText etEventName, etLocation, etDate, etTime, etReporter, etDescription, etContactEmail, etContactPhone;
     private TextInputLayout tilDate;
     private MaterialButton btnSaveEvent;
 
     private DatabaseHelper databaseHelper;
+    private boolean isEditMode = false;
+    private int eventId = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,8 +33,21 @@ public class AddEventActivity extends AppCompatActivity {
 
         initViews();
         databaseHelper = new DatabaseHelper(this);
+
         etDate.setOnClickListener(v -> showDatePicker());
         btnSaveEvent.setOnClickListener(v -> processFormSubmission());
+
+        // Kiểm tra xem Activity có được mở ở chế độ Sửa (Edit Mode) hay không
+        if (getIntent() != null) {
+            isEditMode = getIntent().getBooleanExtra("IS_EDIT", false);
+            if (isEditMode) {
+                eventId = getIntent().getIntExtra("EVENT_ID", -1);
+                if (eventId != -1) {
+                    setTitle("Edit Event");
+                    loadEventDataForEditing(eventId);
+                }
+            }
+        }
     }
 
     private void initViews() {
@@ -39,10 +55,31 @@ public class AddEventActivity extends AppCompatActivity {
         etLocation = findViewById(R.id.etLocation);
         etDate = findViewById(R.id.etDate);
         tilDate = findViewById(R.id.tilDate);
+        etTime = findViewById(R.id.etTime);
+        etReporter = findViewById(R.id.etReporter);
+
         etDescription = findViewById(R.id.etDescription);
         etContactEmail = findViewById(R.id.etContactEmail);
         etContactPhone = findViewById(R.id.etContactPhone);
         btnSaveEvent = findViewById(R.id.btnSaveEvent);
+    }
+
+    // Populate the form with existing data when in Edit mode
+    private void loadEventDataForEditing(int id) {
+        List<Event> allEvents = databaseHelper.getAllEvents();
+        for (Event e : allEvents) {
+            if (e.getId() == id) {
+                etEventName.setText(e.getName());
+                etLocation.setText(e.getLocation());
+                etDate.setText(e.getDate());
+                if (etTime != null) etTime.setText(e.getTime());
+                if (etReporter != null) etReporter.setText(e.getReporter());
+                etDescription.setText(e.getDescription());
+                etContactEmail.setText(e.getContactEmail());
+                etContactPhone.setText(e.getContactPhone());
+                break;
+            }
+        }
     }
 
     private void showDatePicker() {
@@ -65,52 +102,50 @@ public class AddEventActivity extends AppCompatActivity {
         String name = etEventName.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
         String date = etDate.getText().toString().trim();
+        String time = (etTime != null && etTime.getText() != null) ? etTime.getText().toString().trim() : "";
+        String reporter = (etReporter != null && etReporter.getText() != null) ? etReporter.getText().toString().trim() : "";
         String description = etDescription.getText().toString().trim();
         String email = etContactEmail.getText().toString().trim();
         String phone = etContactPhone.getText().toString().trim();
 
+        // Data validation
         if (name.isEmpty()) {
             etEventName.setError("Please enter the event name!");
             etEventName.requestFocus();
             return;
-        } else {
-            etEventName.setError(null);
         }
+        etEventName.setError(null);
 
         if (location.isEmpty()) {
             etLocation.setError("Please enter the location!");
             etLocation.requestFocus();
             return;
-        } else {
-            etLocation.setError(null);
         }
+        etLocation.setError(null);
 
         if (date.isEmpty()) {
             tilDate.setError("Please select the date of the event!");
             etDate.requestFocus();
             return;
-        } else {
-            tilDate.setError(null);
         }
+        tilDate.setError(null);
 
         if (!email.isEmpty() && !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             etContactEmail.setError("Invalid email format!");
             etContactEmail.requestFocus();
             return;
-        } else {
-            etContactEmail.setError(null);
         }
+        etContactEmail.setError(null);
 
         if (!phone.isEmpty() && !Patterns.PHONE.matcher(phone).matches()) {
             etContactPhone.setError("Invalid phone number format!");
             etContactPhone.requestFocus();
             return;
-        } else {
-            etContactPhone.setError(null);
         }
+        etContactPhone.setError(null);
 
-        // Duplicate check: The combination of Event Name and Date must not already exist in the DB.
-        if (databaseHelper.checkEventExists(name, date)) {
+        // Check for duplicates only when adding new entries
+        if (!isEditMode && databaseHelper.checkEventExists(name, date)) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle("Duplicate Event")
                     .setMessage("An event with the same name and date already exists in the database!")
@@ -119,10 +154,13 @@ public class AddEventActivity extends AppCompatActivity {
             return;
         }
 
-        // Initialize an Event object with complete new information
-        Event event = new Event(name, location, date, description, email, phone);
+        Event event;
+        if (isEditMode) {
+            event = new Event(eventId, name, location, date, time, false, reporter, description, email, phone);
+        } else {
+            event = new Event(name, location, date, description, email, phone);
+        }
 
-        // Display the information confirmation table
         showConfirmationDialog(event);
     }
 
@@ -131,16 +169,24 @@ public class AddEventActivity extends AppCompatActivity {
                 "• Event Name: " + event.getName() + "\n" +
                 "• Location: " + event.getLocation() + "\n" +
                 "• Date: " + event.getDate() + "\n" +
+                "• Time: " + (event.getTime() == null || event.getTime().isEmpty() ? "N/A" : event.getTime()) + "\n" +
+                "• Reporter: " + (event.getReporter() == null || event.getReporter().isEmpty() ? "(None)" : event.getReporter()) + "\n" +
                 "• Description: " + (event.getDescription().isEmpty() ? "(None)" : event.getDescription()) + "\n" +
                 "• Contact Email: " + (event.getContactEmail().isEmpty() ? "(None)" : event.getContactEmail()) + "\n" +
                 "• Contact Phone: " + (event.getContactPhone().isEmpty() ? "(None)" : event.getContactPhone());
 
         new MaterialAlertDialogBuilder(this)
-                .setTitle("Event Confirmation")
+                .setTitle(isEditMode ? "Update Confirmation" : "Event Confirmation")
                 .setMessage(message)
                 .setPositiveButton("Confirm & Save", (dialog, which) -> {
-                    boolean isInserted = databaseHelper.addEvent(event);
-                    if (isInserted) {
+                    boolean success;
+                    if (isEditMode) {
+                        success = databaseHelper.updateEvent(event);
+                    } else {
+                        success = databaseHelper.addEvent(event);
+                    }
+
+                    if (success) {
                         showSuccessDialog();
                     } else {
                         Toast.makeText(this, "Failed to save event to database!", Toast.LENGTH_SHORT).show();
@@ -153,7 +199,7 @@ public class AddEventActivity extends AppCompatActivity {
     private void showSuccessDialog() {
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Success")
-                .setMessage("Event saved successfully!")
+                .setMessage(isEditMode ? "Event updated successfully!" : "Event saved successfully!")
                 .setPositiveButton("OK", (dialog, which) -> {
                     dialog.dismiss();
                     finish();

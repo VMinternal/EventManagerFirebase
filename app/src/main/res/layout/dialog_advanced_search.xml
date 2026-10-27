@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Advanced Event Search"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:gravity="center"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Enter a name/description keyword -->
+    <EditText
+        android:id="@+id/edt_search_keyword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Keyword (Name or Description)"
+        android:inputType="text"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Enter date (DD/MM/YYYY) -->
+    <EditText
+        android:id="@+id/edt_search_date"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Date (DD/MM/YYYY)"
+        android:inputType="date"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Enter reporter -->
+    <EditText
+        android:id="@+id/edt_search_organiser"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Organiser / Reporter"
+        android:inputType="text"
+        android:layout_marginBottom="20dp"/>
+
+    <!-- Search button -->
+    <Button
+        android:id="@+id/btn_execute_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Search"
+        android:backgroundTint="@color/design_default_color_primary"/>
+
+</LinearLayout>

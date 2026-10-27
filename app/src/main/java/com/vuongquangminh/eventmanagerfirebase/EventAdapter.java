@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -26,6 +27,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
     public interface OnEventClickListener {
         void onSessionsClick(Event event);
+        void onEditClick(Event event);
+        void onDeleteClick(Event event);
     }
 
     // Constructor with full Context and Session Listener updates
@@ -52,6 +55,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.tvEventDate.setText(event.getDate());
         holder.tvEventTime.setText(event.getTime() != null && !event.getTime().isEmpty() ? event.getTime() : "N/A");
         holder.tvEventReporter.setText(event.getReporter());
+
+        holder.btnEdit.setOnClickListener(v -> sessionListener.onEditClick(event));
+        holder.btnDelete.setOnClickListener(v -> sessionListener.onDeleteClick(event));
 
         // Handle the event when the Sessions button is clicked
         holder.btnManageSessions.setOnClickListener(v -> {
@@ -82,6 +88,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     public static class EventViewHolder extends RecyclerView.ViewHolder {
         TextView tvEventName, tvEventLocation, tvEventDate, tvEventTime, tvEventReporter;
         Button btnManageSessions;
+        ImageButton btnEdit, btnDelete;
 
         public EventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -91,6 +98,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             tvEventTime = itemView.findViewById(R.id.tv_event_time);
             tvEventReporter = itemView.findViewById(R.id.tv_event_reporter);
             btnManageSessions = itemView.findViewById(R.id.btnManageSessions);
+            btnEdit = itemView.findViewById(R.id.btn_edit_event);
+            btnDelete = itemView.findViewById(R.id.btn_delete_event);
         }
     }
 }

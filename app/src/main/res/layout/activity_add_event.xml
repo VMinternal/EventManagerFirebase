@@ -123,6 +123,26 @@
                         android:inputType="none" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Time of the event -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilTime"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:hint="Time (Optional, e.g., 08:00 AM)"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusTopStart="12dp">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etTime"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <!-- Name of the person reporting  -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilReporter"
@@ -237,13 +257,13 @@
                         android:inputType="phone" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Create Event button -->
+                <!-- Create/Update Event button -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveEvent"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
                     android:backgroundTint="#2563EB"
-                    android:text="Create Event"
+                    android:text="Save Event"
                     android:textColor="#FFFFFF"
                     android:textSize="16sp"
                     android:textStyle="bold"
