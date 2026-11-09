@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "795454674828",
+    "firebase_url": "https://dbtest-7a484-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "dbtest-7a484",
+    "storage_bucket": "dbtest-7a484.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:795454674828:android:18f31109b0ae1cfd3b28a9",
+        "android_client_info": {
+          "package_name": "com.vuongquangminh.eventmanagerfirebase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8UcNGIqIegFHwhTDI57uk4FqnCWSjB3E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

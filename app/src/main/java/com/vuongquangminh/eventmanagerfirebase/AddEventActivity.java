@@ -37,7 +37,7 @@ public class AddEventActivity extends AppCompatActivity {
         etDate.setOnClickListener(v -> showDatePicker());
         btnSaveEvent.setOnClickListener(v -> processFormSubmission());
 
-        // Kiểm tra xem Activity có được mở ở chế độ Sửa (Edit Mode) hay không
+        // Check whether the Activity is opened in Edit Mode
         if (getIntent() != null) {
             isEditMode = getIntent().getBooleanExtra("IS_EDIT", false);
             if (isEditMode) {
@@ -158,7 +158,7 @@ public class AddEventActivity extends AppCompatActivity {
         if (isEditMode) {
             event = new Event(eventId, name, location, date, time, false, reporter, description, email, phone);
         } else {
-            event = new Event(name, location, date, description, email, phone);
+            event = new Event(-1, name, location, date, time, false, reporter, description, email, phone);
         }
 
         showConfirmationDialog(event);

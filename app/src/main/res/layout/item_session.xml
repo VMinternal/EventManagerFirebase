@@ -33,6 +33,15 @@
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
+            <!-- ImageView of a pen icon to Edit Session -->
+            <ImageView
+                android:id="@+id/btnEditSession"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginEnd="12dp"
+                android:src="@android:drawable/ic_menu_edit"
+                app:tint="#64748B" />
+
             <!-- Session Delete Button -->
             <ImageButton
                 android:id="@+id/btnDeleteSession"

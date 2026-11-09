@@ -26,7 +26,7 @@ public class Session implements Serializable {
         this.description = description;
     }
 
-    // Constructor dùng khi tạo mới session (chưa có ID)
+    // Constructor used when creating a new session (no ID yet)
     public Session(int eventId, String sessionName, String speaker, String startTime, String endTime, String description) {
         this.id = -1;
         this.eventId = eventId;

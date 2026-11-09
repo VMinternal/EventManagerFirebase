@@ -254,6 +254,20 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return result != -1;
     }
 
+    public boolean updateSession(Session session) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put("session_name", session.getSessionName());
+        values.put("speaker", session.getSpeaker());
+        values.put("start_time", session.getStartTime());
+        values.put("end_time", session.getEndTime());
+        values.put("description", session.getDescription());
+
+        int rows = db.update("sessions", values, "id = ?", new String[]{String.valueOf(session.getId())});
+        db.close();
+        return rows > 0;
+    }
+
     // Retrieve the list of all sessions for a specific event
     public List<Session> getSessionsForEvent(int eventId) {
         List<Session> sessionList = new ArrayList<>();

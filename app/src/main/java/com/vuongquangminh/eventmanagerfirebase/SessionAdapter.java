@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -20,17 +21,18 @@ public class SessionAdapter extends RecyclerView.Adapter<SessionAdapter.SessionV
 
     private Context context;
     private List<Session> sessionList;
-    private OnSessionDeleteListener deleteListener;
+    private OnSessionListener listener;
 
     // Interface for handling the event when the session-delete button is clicked
-    public interface OnSessionDeleteListener {
+    public interface OnSessionListener {
+        void onEditClick(Session session);
         void onDeleteClick(Session session);
     }
 
-    public SessionAdapter(Context context, List<Session> sessionList, OnSessionDeleteListener deleteListener) {
+    public SessionAdapter(Context context, List<Session> sessionList, OnSessionListener listener) {
         this.context = context;
         this.sessionList = sessionList;
-        this.deleteListener = deleteListener;
+        this.listener = listener;
     }
 
     @NonNull
@@ -49,10 +51,17 @@ public class SessionAdapter extends RecyclerView.Adapter<SessionAdapter.SessionV
         holder.tvSessionTime.setText("Time: " + session.getStartTime() + " - " + session.getEndTime());
         holder.tvSessionDescription.setText(session.getDescription() != null ? session.getDescription() : "");
 
+        // Handle the Edit button click event
+        holder.btnEditSession.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onEditClick(session);
+            }
+        });
+
         // Handle the delete button click event
         holder.btnDeleteSession.setOnClickListener(v -> {
-            if (deleteListener != null) {
-                deleteListener.onDeleteClick(session);
+            if (listener != null) {
+                listener.onDeleteClick(session);
             }
         });
     }
@@ -65,6 +74,7 @@ public class SessionAdapter extends RecyclerView.Adapter<SessionAdapter.SessionV
     public static class SessionViewHolder extends RecyclerView.ViewHolder {
         TextView tvSessionName, tvSpeaker, tvSessionTime, tvSessionDescription;
         ImageButton btnDeleteSession;
+        ImageView btnEditSession;
 
         public SessionViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -72,6 +82,7 @@ public class SessionAdapter extends RecyclerView.Adapter<SessionAdapter.SessionV
             tvSpeaker = itemView.findViewById(R.id.tvSpeaker);
             tvSessionTime = itemView.findViewById(R.id.tvSessionTime);
             tvSessionDescription = itemView.findViewById(R.id.tvSessionDescription);
+            btnEditSession = itemView.findViewById(R.id.btnEditSession);
             btnDeleteSession = itemView.findViewById(R.id.btnDeleteSession);
         }
     }

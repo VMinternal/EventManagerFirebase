@@ -18,6 +18,9 @@ public class Event implements Serializable {
     private String contactEmail;
     private String contactPhone;
 
+    public Event() {
+    }
+
     // Constructor used when retrieving data from the SQLite database (have ID)
     public Event(int id, String name, String location, String date, String time,
                  boolean requiresRiskAssessment, String reporter, String description,

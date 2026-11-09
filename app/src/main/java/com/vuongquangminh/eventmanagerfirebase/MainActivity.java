@@ -1,6 +1,9 @@
 package com.vuongquangminh.eventmanagerfirebase;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -17,7 +20,9 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerViewEvents.setLayoutManager(new LinearLayoutManager(this));
 
-        // Initialize the adapter and listen for click events (Sessions, Edit, Delete)
+        // Initialize the Adapter and listen for interaction events (Session, Edit, Delete)
         eventAdapter = new EventAdapter(this, eventList, new EventAdapter.OnEventClickListener() {
             @Override
             public void onSessionsClick(Event event) {
@@ -56,7 +61,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onEditClick(Event event) {
-                // Open the AddEventActivity screen in Edit mode
                 Intent intent = new Intent(MainActivity.this, AddEventActivity.class);
                 intent.putExtra("EVENT_ID", event.getId());
                 intent.putExtra("IS_EDIT", true);
@@ -65,7 +69,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onDeleteClick(Event event) {
-                // Confirmation dialog before deleting an event
                 new AlertDialog.Builder(MainActivity.this)
                         .setTitle("Delete Event")
                         .setMessage("Are you sure you want to delete event '" + event.getName() + "'?")
@@ -73,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
                             boolean success = databaseHelper.deleteEvent(event.getId());
                             if (success) {
                                 Toast.makeText(MainActivity.this, "Event deleted successfully!", Toast.LENGTH_SHORT).show();
-                                loadEvents(); // Tải lại danh sách sau khi xóa
+                                loadEvents();
                             } else {
                                 Toast.makeText(MainActivity.this, "Failed to delete event!", Toast.LENGTH_SHORT).show();
                             }
@@ -102,45 +105,112 @@ public class MainActivity extends AppCompatActivity {
         eventAdapter.updateData(eventList);
     }
 
-    // Display the search icon on the title bar
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
         return true;
     }
 
-    // Handle the event when the search icon in the menu is clicked
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_search) {
+        int id = item.getItemId();
+        if (id == R.id.action_search) {
             showAdvancedSearchDialog();
+            return true;
+        } else if (id == R.id.action_upload) {
+            uploadLocalEventsToCloud();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
-    // Function to open the dialog box for entering advanced search criteria
+    // --- CCLOUD SYNCHRONIZATION FEATURES (FIREBASE) ---
+
+    // Check network connection status
+    private boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager != null) {
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.getActiveNetwork());
+            return capabilities != null && (
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            );
+        }
+        return false;
+    }
+
+    // Upload all data from the local SQLite database to Firebase Firestore
+    private void uploadLocalEventsToCloud() {
+        List<Event> localEvents = databaseHelper.getAllEvents();
+        if (localEvents.isEmpty()) {
+            Toast.makeText(this, "No local events found to upload!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        FirebaseFirestore cloudDb = FirebaseFirestore.getInstance();
+        final int totalEvents = localEvents.size();
+        final int[] successCount = {0};
+
+        Toast.makeText(this, "Pushing " + totalEvents + " logging events to Firebase...", Toast.LENGTH_SHORT).show();
+
+        for (Event event : localEvents) {
+            // Convert the Event object into a Map so that Firestore can recognize it correctly.
+            java.util.Map<String, Object> eventMap = new java.util.HashMap<>();
+            eventMap.put("name", event.getName());
+            eventMap.put("location", event.getLocation());
+            eventMap.put("date", event.getDate());
+            eventMap.put("time", event.getTime());
+            eventMap.put("requiresRiskAssessment", event.isRequiresRiskAssessment());
+            eventMap.put("reporter", event.getReporter());
+            eventMap.put("description", event.getDescription());
+            eventMap.put("contactEmail", event.getContactEmail());
+            eventMap.put("contactPhone", event.getContactPhone());
+
+            cloudDb.collection("events")
+                    .add(eventMap)
+                    .addOnSuccessListener(documentReference -> {
+                        successCount[0]++;
+                        android.util.Log.d("FIREBASE_UPLOAD", "Success ID: " + documentReference.getId());
+
+                        // Once all events have been uploaded
+                        if (successCount[0] == totalEvents) {
+                            Toast.makeText(MainActivity.this, "All events successfully uploaded to Firebase!", Toast.LENGTH_LONG).show();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        android.util.Log.e("FIREBASE_UPLOAD", "Upload error: " + e.getMessage(), e);
+                        Toast.makeText(MainActivity.this, "Firebase Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    });
+        }
+    }
+
+    // --- ADVANCED SEARCH DIALOG BOX ---
     private void showAdvancedSearchDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_advanced_search, null);
-        builder.setView(view);
 
         EditText edtKeyword = view.findViewById(R.id.edt_search_keyword);
         EditText edtDate = view.findViewById(R.id.edt_search_date);
         EditText edtOrganiser = view.findViewById(R.id.edt_search_organiser);
         Button btnSearch = view.findViewById(R.id.btn_execute_search);
 
-        AlertDialog dialog = builder.create();
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle("Advanced Event Search")
+                .setView(view)
+                .setNeutralButton("Show All", (d, which) -> {
+                    loadEvents();
+                    d.dismiss();
+                })
+                .setNegativeButton("Cancel", (d, which) -> d.dismiss())
+                .create();
 
         btnSearch.setOnClickListener(v -> {
-            String keyword = edtKeyword.getText().toString();
-            String date = edtDate.getText().toString();
-            String organiser = edtOrganiser.getText().toString();
+            String keyword = edtKeyword.getText().toString().trim();
+            String date = edtDate.getText().toString().trim();
+            String organiser = edtOrganiser.getText().toString().trim();
 
-            // Call the search function from DatabaseHelper
             List<Event> searchResult = databaseHelper.searchEventsAdvanced(keyword, date, organiser);
 
-            // Update results in the RecyclerView
             if (eventAdapter != null) {
                 eventAdapter.updateData(searchResult);
             }
@@ -148,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
             if (searchResult.isEmpty()) {
                 Toast.makeText(this, "No matching events found!", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Find " + searchResult.size() + " event.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Found " + searchResult.size() + " event(s).", Toast.LENGTH_SHORT).show();
             }
 
             dialog.dismiss();
