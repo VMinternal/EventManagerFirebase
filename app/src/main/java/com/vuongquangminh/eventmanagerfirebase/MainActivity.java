@@ -140,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    // Upload all data from the local SQLite database to Firebase Firestore
+    // Upload all data from the local SQLite database to Firebase Firestore (Events + Sessions)
     private void uploadLocalEventsToCloud() {
         List<Event> localEvents = databaseHelper.getAllEvents();
         if (localEvents.isEmpty()) {
@@ -152,10 +152,10 @@ public class MainActivity extends AppCompatActivity {
         final int totalEvents = localEvents.size();
         final int[] successCount = {0};
 
-        Toast.makeText(this, "Pushing " + totalEvents + " logging events to Firebase...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Pushing events and sessions to Firebase...", Toast.LENGTH_SHORT).show();
 
         for (Event event : localEvents) {
-            // Convert the Event object into a Map so that Firestore can recognize it correctly.
+            // Convert the Event object into a Map
             java.util.Map<String, Object> eventMap = new java.util.HashMap<>();
             eventMap.put("name", event.getName());
             eventMap.put("location", event.getLocation());
@@ -167,15 +167,39 @@ public class MainActivity extends AppCompatActivity {
             eventMap.put("contactEmail", event.getContactEmail());
             eventMap.put("contactPhone", event.getContactPhone());
 
+            // Upload Event to collection
             cloudDb.collection("events")
                     .add(eventMap)
                     .addOnSuccessListener(documentReference -> {
                         successCount[0]++;
-                        android.util.Log.d("FIREBASE_UPLOAD", "Success ID: " + documentReference.getId());
+                        android.util.Log.d("FIREBASE_UPLOAD", "Event Success ID: " + documentReference.getId());
+
+
+                        List<Session> sessions = databaseHelper.getSessionsForEvent(event.getId());
+                        if (sessions != null && !sessions.isEmpty()) {
+                            for (Session session : sessions) {
+                                java.util.Map<String, Object> sessionMap = new java.util.HashMap<>();
+                                sessionMap.put("eventId", event.getId()); // Khóa ngoại liên kết
+                                sessionMap.put("sessionName", session.getSessionName());
+                                sessionMap.put("speaker", session.getSpeaker());
+                                sessionMap.put("startTime", session.getStartTime());
+                                sessionMap.put("endTime", session.getEndTime());
+                                sessionMap.put("description", session.getDescription());
+
+                                cloudDb.collection("sessions")
+                                        .add(sessionMap)
+                                        .addOnSuccessListener(sessionRef -> {
+                                            android.util.Log.d("FIREBASE_UPLOAD", "Session Uploaded ID: " + sessionRef.getId());
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            android.util.Log.e("FIREBASE_UPLOAD", "Session Upload Error: " + e.getMessage());
+                                        });
+                            }
+                        }
 
                         // Once all events have been uploaded
                         if (successCount[0] == totalEvents) {
-                            Toast.makeText(MainActivity.this, "All events successfully uploaded to Firebase!", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, "All events and sessions successfully uploaded to Firebase!", Toast.LENGTH_LONG).show();
                         }
                     })
                     .addOnFailureListener(e -> {
