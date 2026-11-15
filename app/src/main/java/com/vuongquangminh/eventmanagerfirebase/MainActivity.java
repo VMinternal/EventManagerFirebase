@@ -124,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    // --- CCLOUD SYNCHRONIZATION FEATURES (FIREBASE) ---
+    // --- CLOUD SYNCHRONIZATION FEATURES (FIREBASE) ---
 
     // Check network connection status
     private boolean isNetworkAvailable() {
@@ -157,6 +157,9 @@ public class MainActivity extends AppCompatActivity {
         for (Event event : localEvents) {
             // Convert the Event object into a Map
             java.util.Map<String, Object> eventMap = new java.util.HashMap<>();
+
+            eventMap.put("id", event.getId());
+
             eventMap.put("name", event.getName());
             eventMap.put("location", event.getLocation());
             eventMap.put("date", event.getDate());
@@ -167,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
             eventMap.put("contactEmail", event.getContactEmail());
             eventMap.put("contactPhone", event.getContactPhone());
 
-            // Upload Event to collection
+
             cloudDb.collection("events")
                     .add(eventMap)
                     .addOnSuccessListener(documentReference -> {
