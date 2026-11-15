@@ -1,6 +1,7 @@
 package com.vuongquangminh.eventmanagerfirebase;
 
 import android.app.DatePickerDialog;
+import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.util.Patterns;
 import android.widget.Toast;
@@ -34,7 +35,10 @@ public class AddEventActivity extends AppCompatActivity {
         initViews();
         databaseHelper = new DatabaseHelper(this);
 
+        // Gắn sự kiện chọn Ngày và Giờ
         etDate.setOnClickListener(v -> showDatePicker());
+        etTime.setOnClickListener(v -> showTimePicker());
+
         btnSaveEvent.setOnClickListener(v -> processFormSubmission());
 
         // Check whether the Activity is opened in Edit Mode
@@ -96,6 +100,21 @@ public class AddEventActivity extends AppCompatActivity {
                 }, year, month, day);
 
         datePickerDialog.show();
+    }
+
+    // Bật bảng chọn giờ chuẩn Android cho ô Time
+    private void showTimePicker() {
+        Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
+
+        TimePickerDialog timePickerDialog = new TimePickerDialog(this,
+                (view, selectedHour, selectedMinute) -> {
+                    String formattedTime = String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute);
+                    etTime.setText(formattedTime);
+                }, hour, minute, true); // true: định dạng 24h
+
+        timePickerDialog.show();
     }
 
     private void processFormSubmission() {
