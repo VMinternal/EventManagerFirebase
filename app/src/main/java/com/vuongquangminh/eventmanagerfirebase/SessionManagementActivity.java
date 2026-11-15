@@ -1,5 +1,6 @@
 package com.vuongquangminh.eventmanagerfirebase;
 
+import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,7 +15,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 public class SessionManagementActivity extends AppCompatActivity {
 
@@ -89,63 +92,92 @@ public class SessionManagementActivity extends AppCompatActivity {
         final EditText etEndTime = dialogView.findViewById(R.id.etDialogEndTime);
         final EditText etDescription = dialogView.findViewById(R.id.etDialogDescription);
 
+        // Gắn sự kiện mở TimePickerDialog an toàn
+        etStartTime.setOnClickListener(v -> showTimePicker(v, etStartTime));
+        etEndTime.setOnClickListener(v -> showTimePicker(v, etEndTime));
+
         boolean isEdit = (sessionToEdit != null);
 
         if (isEdit) {
             builder.setTitle("Edit Session");
-            // Populate the dialog interface with existing data when in Edit mode
-            etSessionName.setText(sessionToEdit.getSessionName());
-            etSpeaker.setText(sessionToEdit.getSpeaker());
-            etStartTime.setText(sessionToEdit.getStartTime());
-            etEndTime.setText(sessionToEdit.getEndTime());
-            etDescription.setText(sessionToEdit.getDescription());
+            // Đổ dữ liệu cũ vào các ô một cách an toàn
+            if (sessionToEdit.getSessionName() != null) etSessionName.setText(sessionToEdit.getSessionName());
+            if (sessionToEdit.getSpeaker() != null) etSpeaker.setText(sessionToEdit.getSpeaker());
+            if (sessionToEdit.getStartTime() != null) etStartTime.setText(sessionToEdit.getStartTime());
+            if (sessionToEdit.getEndTime() != null) etEndTime.setText(sessionToEdit.getEndTime());
+            if (sessionToEdit.getDescription() != null) etDescription.setText(sessionToEdit.getDescription());
         } else {
             builder.setTitle("Add New Session");
         }
 
         builder.setPositiveButton(isEdit ? "Update" : "Add", (dialog, which) -> {
-                    String name = etSessionName.getText().toString().trim();
-                    String speaker = etSpeaker.getText().toString().trim();
-                    String startTime = etStartTime.getText().toString().trim();
-                    String endTime = etEndTime.getText().toString().trim();
-                    String description = etDescription.getText().toString().trim();
+            try {
+                String name = etSessionName.getText() != null ? etSessionName.getText().toString().trim() : "";
+                String speaker = etSpeaker.getText() != null ? etSpeaker.getText().toString().trim() : "";
+                String startTime = etStartTime.getText() != null ? etStartTime.getText().toString().trim() : "";
+                String endTime = etEndTime.getText() != null ? etEndTime.getText().toString().trim() : "";
+                String description = etDescription.getText() != null ? etDescription.getText().toString().trim() : "";
 
-                    if (name.isEmpty()) {
-                        Toast.makeText(SessionManagementActivity.this, "Session Name is required!", Toast.LENGTH_SHORT).show();
+                if (name.isEmpty()) {
+                    Toast.makeText(SessionManagementActivity.this, "Session Name is required!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (isEdit) {
+                    if (sessionToEdit == null || sessionToEdit.getId() <= 0) {
+                        Toast.makeText(SessionManagementActivity.this, "Error: Invalid Session ID!", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    if (isEdit) {
-                        // Update the information in the current session object
-                        sessionToEdit.setSessionName(name);
-                        sessionToEdit.setSpeaker(speaker);
-                        sessionToEdit.setStartTime(startTime);
-                        sessionToEdit.setEndTime(endTime);
-                        sessionToEdit.setDescription(description);
+                    sessionToEdit.setSessionName(name);
+                    sessionToEdit.setSpeaker(speaker);
+                    sessionToEdit.setStartTime(startTime);
+                    sessionToEdit.setEndTime(endTime);
+                    sessionToEdit.setDescription(description);
 
-                        boolean isUpdated = databaseHelper.updateSession(sessionToEdit);
-                        if (isUpdated) {
-                            Toast.makeText(SessionManagementActivity.this, "Session updated successfully!", Toast.LENGTH_SHORT).show();
-                            loadSessionsData();
-                        } else {
-                            Toast.makeText(SessionManagementActivity.this, "Failed to update session.", Toast.LENGTH_SHORT).show();
-                        }
+                    boolean isUpdated = databaseHelper.updateSession(sessionToEdit);
+                    if (isUpdated) {
+                        Toast.makeText(SessionManagementActivity.this, "Session updated successfully!", Toast.LENGTH_SHORT).show();
+                        loadSessionsData();
                     } else {
-                        // Add new session
-                        Session newSession = new Session(eventId, name, speaker, startTime, endTime, description);
-                        boolean isInserted = databaseHelper.addSession(newSession);
-
-                        if (isInserted) {
-                            Toast.makeText(SessionManagementActivity.this, "Session added successfully!", Toast.LENGTH_SHORT).show();
-                            loadSessionsData();
-                        } else {
-                            Toast.makeText(SessionManagementActivity.this, "Failed to add session.", Toast.LENGTH_SHORT).show();
-                        }
+                        Toast.makeText(SessionManagementActivity.this, "Failed to update session.", Toast.LENGTH_SHORT).show();
                     }
-                })
-                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+                } else {
+                    Session newSession = new Session(eventId, name, speaker, startTime, endTime, description);
+                    boolean isInserted = databaseHelper.addSession(newSession);
 
-        builder.create().show();
+                    if (isInserted) {
+                        Toast.makeText(SessionManagementActivity.this, "Session added successfully!", Toast.LENGTH_SHORT).show();
+                        loadSessionsData();
+                    } else {
+                        Toast.makeText(SessionManagementActivity.this, "Failed to add session.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(SessionManagementActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        }).setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    // Hàm hiển thị TimePickerDialog an toàn tuyệt đối
+    private void showTimePicker(View view, EditText targetEditText) {
+        Calendar calendar = Calendar.getInstance();
+        int hour = calendar.get(Calendar.HOUR_OF_DAY);
+        int minute = calendar.get(Calendar.MINUTE);
+
+        TimePickerDialog timePickerDialog = new TimePickerDialog(
+                view.getContext(),
+                (datePicker, selectedHour, selectedMinute) -> {
+                    String formattedTime = String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute);
+                    targetEditText.setText(formattedTime);
+                },
+                hour, minute, true
+        );
+        timePickerDialog.show();
     }
 
     // Show confirmation before deleting a session

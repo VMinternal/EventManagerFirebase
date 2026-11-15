@@ -18,7 +18,7 @@ import java.util.List;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "event_manager.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
 
     // Table Events
     private static final String TABLE_EVENTS = "events";
@@ -261,9 +261,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         values.put("speaker", session.getSpeaker());
         values.put("start_time", session.getStartTime());
         values.put("end_time", session.getEndTime());
-        values.put("description", session.getDescription());
+        values.put(COLUMN_SESSION_DESCRIPTION, session.getDescription());
 
-        int rows = db.update("sessions", values, "id = ?", new String[]{String.valueOf(session.getId())});
+        int rows = db.update(TABLE_SESSIONS, values, COLUMN_SESSION_ID + " = ?", new String[]{String.valueOf(session.getId())});
         db.close();
         return rows > 0;
     }
