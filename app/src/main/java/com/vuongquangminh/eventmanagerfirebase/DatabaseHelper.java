@@ -299,6 +299,42 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return sessionList;
     }
 
+    public List<Session> searchSessionsForEvent(int eventId, String keyword) {
+        List<Session> sessionList = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        String query = "SELECT * FROM " + TABLE_SESSIONS +
+                " WHERE " + COLUMN_SESSION_EVENT_ID + " = ? AND (" +
+                COLUMN_SESSION_NAME + " LIKE ? OR " +
+                COLUMN_SESSION_DESCRIPTION + " LIKE ?) " +
+                " ORDER BY " + COLUMN_SESSION_ID + " DESC";
+
+        Cursor cursor = db.rawQuery(query, new String[]{
+                String.valueOf(eventId),
+                "%" + keyword.trim() + "%",
+                "%" + keyword.trim() + "%"
+        });
+
+        if (cursor.moveToFirst()) {
+            do {
+                int id = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SESSION_ID));
+                int evId = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_SESSION_EVENT_ID));
+                String name = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_NAME));
+                String speaker = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_SPEAKER));
+                String startTime = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_START_TIME));
+                String endTime = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_END_TIME));
+                String description = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_SESSION_DESCRIPTION));
+
+                Session session = new Session(id, evId, name, speaker, startTime, endTime, description);
+                sessionList.add(session);
+            } while (cursor.moveToNext());
+        }
+
+        cursor.close();
+        db.close();
+        return sessionList;
+    }
+
     // Delete a session by ID
     public boolean deleteSession(int sessionId) {
         SQLiteDatabase db = this.getWritableDatabase();

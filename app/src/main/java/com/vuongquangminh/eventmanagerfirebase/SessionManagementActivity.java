@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.SearchView; // Import SearchView
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -23,6 +24,7 @@ public class SessionManagementActivity extends AppCompatActivity {
 
     private RecyclerView rvSessions;
     private ExtendedFloatingActionButton fabAddSession;
+    private SearchView searchViewSessions;
 
     private DatabaseHelper databaseHelper;
     private SessionAdapter sessionAdapter;
@@ -48,20 +50,41 @@ public class SessionManagementActivity extends AppCompatActivity {
         // View Mapping
         rvSessions = findViewById(R.id.rvSessions);
         fabAddSession = findViewById(R.id.fabAddSession);
+        searchViewSessions = findViewById(R.id.searchViewSessions); // Ánh xạ SearchView
 
         // Setting up RecyclerView
         rvSessions.setLayoutManager(new LinearLayoutManager(this));
         sessionList = new ArrayList<>();
 
-        loadSessionsData();
+
+        loadSessionsData("");
+
+        // Searching for digital events on SearchView
+        searchViewSessions.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                loadSessionsData(query);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                loadSessionsData(newText); // Automatic real-time filtering as you type.
+                return true;
+            }
+        });
 
         // Handling the event when the button to add a new session is clicked (pass null for Add mode)
         fabAddSession.setOnClickListener(v -> showSessionDialog(null));
     }
 
-    // Load the list of sessions from SQLite into a RecyclerView
-    private void loadSessionsData() {
-        sessionList = databaseHelper.getSessionsForEvent(eventId);
+    // Load the list of sessions from SQLite into a RecyclerView (Hỗ trợ lọc theo từ khóa)
+    private void loadSessionsData(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            sessionList = databaseHelper.getSessionsForEvent(eventId);
+        } else {
+            sessionList = databaseHelper.searchSessionsForEvent(eventId, keyword);
+        }
 
         // Update the adapter to support both Edit and Delete events.
         sessionAdapter = new SessionAdapter(this, sessionList, new SessionAdapter.OnSessionListener() {
@@ -92,7 +115,7 @@ public class SessionManagementActivity extends AppCompatActivity {
         final EditText etEndTime = dialogView.findViewById(R.id.etDialogEndTime);
         final EditText etDescription = dialogView.findViewById(R.id.etDialogDescription);
 
-        // Gắn sự kiện mở TimePickerDialog an toàn
+        // Safely attaching the event to open a TimePickerDialog
         etStartTime.setOnClickListener(v -> showTimePicker(v, etStartTime));
         etEndTime.setOnClickListener(v -> showTimePicker(v, etEndTime));
 
@@ -100,7 +123,7 @@ public class SessionManagementActivity extends AppCompatActivity {
 
         if (isEdit) {
             builder.setTitle("Edit Session");
-            // Đổ dữ liệu cũ vào các ô một cách an toàn
+            // Safely load legacy data into the cells
             if (sessionToEdit.getSessionName() != null) etSessionName.setText(sessionToEdit.getSessionName());
             if (sessionToEdit.getSpeaker() != null) etSpeaker.setText(sessionToEdit.getSpeaker());
             if (sessionToEdit.getStartTime() != null) etStartTime.setText(sessionToEdit.getStartTime());
@@ -123,6 +146,9 @@ public class SessionManagementActivity extends AppCompatActivity {
                     return;
                 }
 
+                // Retain current search keywords to maintain the filter state after an Add/Update operation.
+                String currentQuery = searchViewSessions.getQuery().toString();
+
                 if (isEdit) {
                     if (sessionToEdit == null || sessionToEdit.getId() <= 0) {
                         Toast.makeText(SessionManagementActivity.this, "Error: Invalid Session ID!", Toast.LENGTH_SHORT).show();
@@ -138,7 +164,7 @@ public class SessionManagementActivity extends AppCompatActivity {
                     boolean isUpdated = databaseHelper.updateSession(sessionToEdit);
                     if (isUpdated) {
                         Toast.makeText(SessionManagementActivity.this, "Session updated successfully!", Toast.LENGTH_SHORT).show();
-                        loadSessionsData();
+                        loadSessionsData(currentQuery);
                     } else {
                         Toast.makeText(SessionManagementActivity.this, "Failed to update session.", Toast.LENGTH_SHORT).show();
                     }
@@ -148,7 +174,7 @@ public class SessionManagementActivity extends AppCompatActivity {
 
                     if (isInserted) {
                         Toast.makeText(SessionManagementActivity.this, "Session added successfully!", Toast.LENGTH_SHORT).show();
-                        loadSessionsData();
+                        loadSessionsData(currentQuery);
                     } else {
                         Toast.makeText(SessionManagementActivity.this, "Failed to add session.", Toast.LENGTH_SHORT).show();
                     }
@@ -163,7 +189,7 @@ public class SessionManagementActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    // Hàm hiển thị TimePickerDialog an toàn tuyệt đối
+    // A completely safe function for displaying a TimePickerDialog
     private void showTimePicker(View view, EditText targetEditText) {
         Calendar calendar = Calendar.getInstance();
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
@@ -189,7 +215,7 @@ public class SessionManagementActivity extends AppCompatActivity {
                     boolean isDeleted = databaseHelper.deleteSession(session.getId());
                     if (isDeleted) {
                         Toast.makeText(this, "Session deleted!", Toast.LENGTH_SHORT).show();
-                        loadSessionsData();
+                        loadSessionsData(searchViewSessions.getQuery().toString());
                     } else {
                         Toast.makeText(this, "Failed to delete session.", Toast.LENGTH_SHORT).show();
                     }
