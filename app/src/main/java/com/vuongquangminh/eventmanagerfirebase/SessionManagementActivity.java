@@ -50,7 +50,7 @@ public class SessionManagementActivity extends AppCompatActivity {
         // View Mapping
         rvSessions = findViewById(R.id.rvSessions);
         fabAddSession = findViewById(R.id.fabAddSession);
-        searchViewSessions = findViewById(R.id.searchViewSessions); // Ánh xạ SearchView
+        searchViewSessions = findViewById(R.id.searchViewSessions); // SearchView mapping
 
         // Setting up RecyclerView
         rvSessions.setLayoutManager(new LinearLayoutManager(this));

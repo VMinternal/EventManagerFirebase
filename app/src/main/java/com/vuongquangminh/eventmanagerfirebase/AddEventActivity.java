@@ -102,7 +102,7 @@ public class AddEventActivity extends AppCompatActivity {
         datePickerDialog.show();
     }
 
-    // Bật bảng chọn giờ chuẩn Android cho ô Time
+    // Turn on the standard Android time picker for the Time field
     private void showTimePicker() {
         Calendar calendar = Calendar.getInstance();
         int hour = calendar.get(Calendar.HOUR_OF_DAY);
@@ -112,7 +112,7 @@ public class AddEventActivity extends AppCompatActivity {
                 (view, selectedHour, selectedMinute) -> {
                     String formattedTime = String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute);
                     etTime.setText(formattedTime);
-                }, hour, minute, true); // true: định dạng 24h
+                }, hour, minute, true); // true: 24h format
 
         timePickerDialog.show();
     }

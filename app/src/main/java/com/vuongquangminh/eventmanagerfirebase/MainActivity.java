@@ -22,12 +22,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final String REALTIME_DB_URL =
+            "https://dbtest-7a484-default-rtdb.asia-southeast1.firebasedatabase.app/";
 
     private RecyclerView recyclerViewEvents;
     private FloatingActionButton fabAddEvent;
@@ -124,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    // --- CLOUD SYNCHRONIZATION FEATURES (FIREBASE) ---
+    // --- CLOUD SYNCHRONIZATION FEATURES (FIREBASE REALTIME DATABASE) ---
 
     // Check network connection status
     private boolean isNetworkAvailable() {
@@ -140,26 +146,34 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    // Upload all data from the local SQLite database to Firebase Firestore (Events + Sessions)
+    // Upload all data from the local SQLite database to Firebase Realtime Database (Events + Sessions)
     private void uploadLocalEventsToCloud() {
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "No internet connection! Please connect to the network before uploading.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         List<Event> localEvents = databaseHelper.getAllEvents();
         if (localEvents.isEmpty()) {
             Toast.makeText(this, "No local events found to upload!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        FirebaseFirestore cloudDb = FirebaseFirestore.getInstance();
+        DatabaseReference rootRef = FirebaseDatabase.getInstance(REALTIME_DB_URL).getReference();
+        DatabaseReference eventsRef = rootRef.child("events");
+        DatabaseReference sessionsRef = rootRef.child("sessions");
+
         final int totalEvents = localEvents.size();
-        final int[] successCount = {0};
+        final int[] completedEvents = {0};
+        final boolean[] hasError = {false};
 
         Toast.makeText(this, "Pushing events and sessions to Firebase...", Toast.LENGTH_SHORT).show();
 
         for (Event event : localEvents) {
-            // Convert the Event object into a Map
-            java.util.Map<String, Object> eventMap = new java.util.HashMap<>();
+            String eventKey = String.valueOf(event.getId());
 
+            Map<String, Object> eventMap = new HashMap<>();
             eventMap.put("id", event.getId());
-
             eventMap.put("name", event.getName());
             eventMap.put("location", event.getLocation());
             eventMap.put("date", event.getDate());
@@ -170,43 +184,46 @@ public class MainActivity extends AppCompatActivity {
             eventMap.put("contactEmail", event.getContactEmail());
             eventMap.put("contactPhone", event.getContactPhone());
 
-
-            cloudDb.collection("events")
-                    .add(eventMap)
-                    .addOnSuccessListener(documentReference -> {
-                        successCount[0]++;
-                        android.util.Log.d("FIREBASE_UPLOAD", "Event Success ID: " + documentReference.getId());
-
+            eventsRef.child(eventKey).setValue(eventMap)
+                    .addOnSuccessListener(unused -> {
+                        android.util.Log.d("FIREBASE_RTDB", "Event synced ID: " + eventKey);
 
                         List<Session> sessions = databaseHelper.getSessionsForEvent(event.getId());
-                        if (sessions != null && !sessions.isEmpty()) {
-                            for (Session session : sessions) {
-                                java.util.Map<String, Object> sessionMap = new java.util.HashMap<>();
-                                sessionMap.put("eventId", event.getId()); // Khóa ngoại liên kết
-                                sessionMap.put("sessionName", session.getSessionName());
-                                sessionMap.put("speaker", session.getSpeaker());
-                                sessionMap.put("startTime", session.getStartTime());
-                                sessionMap.put("endTime", session.getEndTime());
-                                sessionMap.put("description", session.getDescription());
+                        DatabaseReference currentEventSessionsRef = sessionsRef.child(eventKey);
 
-                                cloudDb.collection("sessions")
-                                        .add(sessionMap)
-                                        .addOnSuccessListener(sessionRef -> {
-                                            android.util.Log.d("FIREBASE_UPLOAD", "Session Uploaded ID: " + sessionRef.getId());
-                                        })
-                                        .addOnFailureListener(e -> {
-                                            android.util.Log.e("FIREBASE_UPLOAD", "Session Upload Error: " + e.getMessage());
-                                        });
+                        currentEventSessionsRef.removeValue().addOnCompleteListener(removeTask -> {
+                            if (sessions != null && !sessions.isEmpty()) {
+                                for (Session session : sessions) {
+                                    String sessionKey = String.valueOf(session.getId());
+                                    Map<String, Object> sessionMap = new HashMap<>();
+                                    sessionMap.put("id", session.getId());
+                                    sessionMap.put("eventId", event.getId());
+                                    sessionMap.put("sessionName", session.getSessionName());
+                                    sessionMap.put("speaker", session.getSpeaker());
+                                    sessionMap.put("startTime", session.getStartTime());
+                                    sessionMap.put("endTime", session.getEndTime());
+                                    sessionMap.put("description", session.getDescription());
+
+                                    currentEventSessionsRef.child(sessionKey).setValue(sessionMap)
+                                            .addOnFailureListener(e -> {
+                                                hasError[0] = true;
+                                                android.util.Log.e("FIREBASE_RTDB", "Session sync error: " + e.getMessage());
+                                            });
+                                }
                             }
-                        }
 
-                        // Once all events have been uploaded
-                        if (successCount[0] == totalEvents) {
-                            Toast.makeText(MainActivity.this, "All events and sessions successfully uploaded to Firebase!", Toast.LENGTH_LONG).show();
-                        }
+                            completedEvents[0]++;
+                            if (completedEvents[0] == totalEvents && !hasError[0]) {
+                                Toast.makeText(MainActivity.this,
+                                        "All events and sessions successfully uploaded to Firebase!",
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        });
                     })
                     .addOnFailureListener(e -> {
-                        android.util.Log.e("FIREBASE_UPLOAD", "Upload error: " + e.getMessage(), e);
+                        hasError[0] = true;
+                        completedEvents[0]++;
+                        android.util.Log.e("FIREBASE_RTDB", "Event upload error: " + e.getMessage(), e);
                         Toast.makeText(MainActivity.this, "Firebase Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
                     });
         }
