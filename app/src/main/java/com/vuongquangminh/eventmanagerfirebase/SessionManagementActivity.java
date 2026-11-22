@@ -133,7 +133,13 @@ public class SessionManagementActivity extends AppCompatActivity {
             builder.setTitle("Add New Session");
         }
 
-        builder.setPositiveButton(isEdit ? "Update" : "Add", (dialog, which) -> {
+        builder.setPositiveButton(isEdit ? "Update" : "Add", null)
+                .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             try {
                 String name = etSessionName.getText() != null ? etSessionName.getText().toString().trim() : "";
                 String speaker = etSpeaker.getText() != null ? etSpeaker.getText().toString().trim() : "";
@@ -142,7 +148,8 @@ public class SessionManagementActivity extends AppCompatActivity {
                 String description = etDescription.getText() != null ? etDescription.getText().toString().trim() : "";
 
                 if (name.isEmpty()) {
-                    Toast.makeText(SessionManagementActivity.this, "Session Name is required!", Toast.LENGTH_SHORT).show();
+                    etSessionName.setError("Session Name is required!");
+                    etSessionName.requestFocus();
                     return;
                 }
 
@@ -165,6 +172,7 @@ public class SessionManagementActivity extends AppCompatActivity {
                     if (isUpdated) {
                         Toast.makeText(SessionManagementActivity.this, "Session updated successfully!", Toast.LENGTH_SHORT).show();
                         loadSessionsData(currentQuery);
+                        dialog.dismiss();
                     } else {
                         Toast.makeText(SessionManagementActivity.this, "Failed to update session.", Toast.LENGTH_SHORT).show();
                     }
@@ -175,6 +183,7 @@ public class SessionManagementActivity extends AppCompatActivity {
                     if (isInserted) {
                         Toast.makeText(SessionManagementActivity.this, "Session added successfully!", Toast.LENGTH_SHORT).show();
                         loadSessionsData(currentQuery);
+                        dialog.dismiss();
                     } else {
                         Toast.makeText(SessionManagementActivity.this, "Failed to add session.", Toast.LENGTH_SHORT).show();
                     }
@@ -183,10 +192,7 @@ public class SessionManagementActivity extends AppCompatActivity {
                 e.printStackTrace();
                 Toast.makeText(SessionManagementActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
-        }).setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-
-        AlertDialog dialog = builder.create();
-        dialog.show();
+        });
     }
 
     // A completely safe function for displaying a TimePickerDialog
